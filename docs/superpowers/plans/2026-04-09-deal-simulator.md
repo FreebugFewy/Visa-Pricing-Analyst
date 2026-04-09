@@ -2,11 +2,44 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extend the single-page Streamlit dashboard into a two-page app by adding an interactive merchant deal P&L simulator grounded in the existing dataset.
+**Goal:** Extend the single-page Streamlit dashboard into a two-page app by adding an interactive merchant deal P&L simulator that demonstrates financial modeling skills aligned to the Visa Pricing Strategy Analyst JD.
 
-**Architecture:** Extract a shared data loader into `utils/data_loader.py` used by both pages. The simulator's core logic lives in `utils/deal_pnl.py` as a pure, testable function with no Streamlit dependency. The deal simulator page wires inputs to the function and renders outputs.
+**Architecture:** Extract a shared data loader into `utils/data_loader.py` used by both pages. The simulator's core logic lives in `utils/deal_pnl.py` as a pure, testable function with no Streamlit dependency. The deal simulator page wires inputs to the function and renders outputs. Streamlit automatically adds `streamlit_app/` to `sys.path` when running `streamlit run app.py`, so no path manipulation is needed in either page.
 
 **Tech Stack:** Python 3, Streamlit, Pandas, Altair, pytest
+
+---
+
+## Prerequisites
+
+These must be true before starting:
+
+1. Python 3.10+ installed
+2. Run from `streamlit_app/` to start the app: `streamlit run app.py`
+3. Run from the project root to execute tests: `pytest`
+4. All dependencies installed:
+
+```bash
+pip install streamlit altair pandas pytest
+```
+
+---
+
+## Key formula: Volume Uplift to Break Even
+
+> This is the metric most likely to come up in an interview — understand it before implementing.
+
+If Visa offers a merchant a 15% discount off the standard interchange rate, Visa earns only 85% of what it would at standard pricing. To *break even* relative to a smaller deal at standard rates, the merchant must bring enough additional volume so that the discounted revenue equals what the un-discounted revenue would have been:
+
+```
+V_standard × rate = V_discounted × rate × (1 - discount)
+V_discounted = V_standard / (1 - discount)
+Uplift needed = V_discounted - V_standard = V_standard × discount / (1 - discount)
+```
+
+In code: `breakeven_uplift_m = committed_volume_m / (1 - discount_rate) - committed_volume_m`
+
+Example: 50M committed transactions, 15% discount → uplift needed = 50 / 0.85 - 50 = **8.8M additional transactions per year**.
 
 ---
 
@@ -15,12 +48,13 @@
 | File | Action | Responsibility |
 |---|---|---|
 | `streamlit_app/app.py` | Modify | Import loader from utils; update page config title |
-| `streamlit_app/utils/__init__.py` | Create | Makes utils a package |
+| `streamlit_app/utils/__init__.py` | Create | Makes utils a Python package |
 | `streamlit_app/utils/data_loader.py` | Create | Shared cached CSV loader |
 | `streamlit_app/utils/deal_pnl.py` | Create | Pure `compute_deal_pnl()` function |
 | `streamlit_app/pages/2_deal_simulator.py` | Create | Deal simulator Streamlit page |
+| `tests/__init__.py` | Create | Makes tests a package |
 | `tests/test_deal_pnl.py` | Create | Unit tests for `compute_deal_pnl` |
-| `pytest.ini` | Create | Configure pythonpath for imports |
+| `pytest.ini` | Create | Configure pythonpath so tests use same import style as app |
 
 ---
 
@@ -33,10 +67,7 @@
 
 - [ ] **Step 1: Create the utils package**
 
-Create `streamlit_app/utils/__init__.py` (empty file):
-
-```python
-```
+Create `streamlit_app/utils/__init__.py` as an empty file.
 
 - [ ] **Step 2: Create the shared data loader**
 
@@ -55,43 +86,59 @@ def load_data() -> pd.DataFrame:
     return pd.read_csv(DATA_PATH, parse_dates=["month"])
 ```
 
-- [ ] **Step 3: Update app.py to use the shared loader**
+- [ ] **Step 3: Replace the data loading block in app.py**
 
-In `streamlit_app/app.py`, replace the existing data loading block:
+The top of `streamlit_app/app.py` currently reads:
 
 ```python
-# Remove these lines:
+import streamlit as st
+import pandas as pd
+import altair as alt
+from pathlib import Path
+
+st.set_page_config(
+    page_title="Visa Pricing Analytics",
+    page_icon="💳",
+    layout="wide",
+)
+
 DATA_PATH = Path(__file__).parent / "data" / "visa_pricing_metrics.csv"
 
 @st.cache_data
 def load_data():
     df = pd.read_csv(DATA_PATH, parse_dates=["month"])
     return df
+
+df = load_data()
 ```
 
-With:
+Replace the entire block above with:
 
 ```python
-import sys
-sys.path.insert(0, str(Path(__file__).parent))
+import streamlit as st
+import pandas as pd
+import altair as alt
 from utils.data_loader import load_data
-```
 
-Also update `st.set_page_config` to set an explicit page name:
-
-```python
 st.set_page_config(
     page_title="Market Overview",
     page_icon="💳",
     layout="wide",
 )
+
+df = load_data()
 ```
+
+Note: No `sys.path` manipulation needed. Streamlit automatically adds `streamlit_app/` to `sys.path` for all pages when you run `streamlit run app.py` from that directory.
 
 - [ ] **Step 4: Verify app still loads**
 
-Run: `cd streamlit_app && streamlit run app.py`
+Run from `streamlit_app/`:
+```bash
+streamlit run app.py
+```
 
-Expected: App loads at `http://localhost:8501` with all four charts visible and no import errors in the terminal.
+Expected: App loads at `http://localhost:8501`. All four charts visible. Terminal shows no import errors.
 
 - [ ] **Step 5: Commit**
 
@@ -106,6 +153,7 @@ git commit -m "refactor: extract shared data loader into utils package"
 
 **Files:**
 - Create: `pytest.ini`
+- Create: `tests/__init__.py`
 - Create: `tests/test_deal_pnl.py`
 - Create: `streamlit_app/utils/deal_pnl.py`
 
@@ -115,21 +163,22 @@ Create `pytest.ini` at the project root:
 
 ```ini
 [pytest]
-pythonpath = .
+pythonpath = streamlit_app
 testpaths = tests
 ```
 
-- [ ] **Step 2: Create the tests directory and write failing tests**
+This adds `streamlit_app/` to the Python path for tests, so test imports (`from utils.deal_pnl import ...`) match app imports exactly — no inconsistent import paths between test and production code.
+
+- [ ] **Step 2: Write failing tests**
 
 Create `tests/__init__.py` (empty), then create `tests/test_deal_pnl.py`:
 
 ```python
 import pytest
-import pandas as pd
-from streamlit_app.utils.deal_pnl import compute_deal_pnl
+from utils.deal_pnl import compute_deal_pnl
 
 
-def test_returns_correct_number_of_rows():
+def test_returns_one_row_per_year():
     df = compute_deal_pnl(
         baseline_interchange_rate=0.019,
         committed_volume_m=50.0,
@@ -141,7 +190,7 @@ def test_returns_correct_number_of_rows():
     assert len(df) == 3
 
 
-def test_year_1_volume_equals_committed():
+def test_year_1_volume_equals_committed_volume():
     df = compute_deal_pnl(
         baseline_interchange_rate=0.019,
         committed_volume_m=50.0,
@@ -153,7 +202,8 @@ def test_year_1_volume_equals_committed():
     assert df.loc[0, "volume_m"] == pytest.approx(50.0)
 
 
-def test_volume_grows_by_growth_rate():
+def test_year_2_volume_reflects_growth_rate():
+    # 50M * 1.10^1 = 55M
     df = compute_deal_pnl(
         baseline_interchange_rate=0.019,
         committed_volume_m=50.0,
@@ -165,7 +215,7 @@ def test_volume_grows_by_growth_rate():
     assert df.loc[1, "volume_m"] == pytest.approx(55.0)
 
 
-def test_gross_revenue_calculation():
+def test_gross_revenue_is_volume_times_avg_txn_times_rate():
     # 10M txns * $100 * 2.0% = $20,000,000
     df = compute_deal_pnl(
         baseline_interchange_rate=0.020,
@@ -178,7 +228,7 @@ def test_gross_revenue_calculation():
     assert df.loc[0, "gross_revenue"] == pytest.approx(20_000_000.0)
 
 
-def test_zero_discount_gross_equals_net():
+def test_zero_discount_means_gross_equals_net():
     df = compute_deal_pnl(
         baseline_interchange_rate=0.019,
         committed_volume_m=50.0,
@@ -204,8 +254,8 @@ def test_discount_cost_equals_gross_minus_net():
         assert row["discount_cost"] == pytest.approx(row["gross_revenue"] - row["net_revenue"])
 
 
-def test_npv_contribution_discounted_at_8_percent():
-    # 10M txns * $100 * 2% = $20M net (0% discount). Year 1 NPV = 20M / 1.08
+def test_npv_contribution_uses_hurdle_rate():
+    # 10M txns * $100 * 2% = $20M net (no discount). Year 1 NPV = 20M / 1.08
     df = compute_deal_pnl(
         baseline_interchange_rate=0.020,
         committed_volume_m=10.0,
@@ -215,11 +265,10 @@ def test_npv_contribution_discounted_at_8_percent():
         volume_growth_rate=0.0,
         npv_discount_rate=0.08,
     )
-    expected_yr1 = 20_000_000.0 / 1.08
-    assert df.loc[0, "npv_contribution"] == pytest.approx(expected_yr1)
+    assert df.loc[0, "npv_contribution"] == pytest.approx(20_000_000.0 / 1.08)
 
 
-def test_zero_growth_all_years_same_volume():
+def test_zero_growth_produces_identical_volume_each_year():
     df = compute_deal_pnl(
         baseline_interchange_rate=0.019,
         committed_volume_m=50.0,
@@ -233,9 +282,15 @@ def test_zero_growth_all_years_same_volume():
 
 - [ ] **Step 3: Run tests to confirm they fail**
 
-Run: `pytest tests/test_deal_pnl.py -v`
+Run from the project root:
+```bash
+pytest tests/test_deal_pnl.py -v
+```
 
-Expected: All 8 tests FAIL with `ModuleNotFoundError: No module named 'streamlit_app'`
+Expected: All 8 tests fail with:
+```
+ModuleNotFoundError: No module named 'utils.deal_pnl'
+```
 
 - [ ] **Step 4: Implement compute_deal_pnl**
 
@@ -262,7 +317,7 @@ def compute_deal_pnl(
         committed_volume_m: Committed annual transaction volume in millions
         avg_transaction_usd: Average transaction value in USD
         discount_rate: Discount off standard interchange (e.g., 0.10 = 10% off)
-        deal_term_years: Length of deal in years (1–5)
+        deal_term_years: Length of deal in years (1-5)
         volume_growth_rate: Expected YoY volume growth (e.g., 0.05 = 5%)
         npv_discount_rate: Hurdle rate for NPV calculation (default 8%)
 
@@ -277,16 +332,14 @@ def compute_deal_pnl(
         discount_cost = gross_revenue * discount_rate
         net_revenue = gross_revenue - discount_cost
         npv_contribution = net_revenue / (1 + npv_discount_rate) ** year
-        rows.append(
-            {
-                "year": year,
-                "volume_m": volume / 1_000_000,
-                "gross_revenue": gross_revenue,
-                "discount_cost": discount_cost,
-                "net_revenue": net_revenue,
-                "npv_contribution": npv_contribution,
-            }
-        )
+        rows.append({
+            "year": year,
+            "volume_m": volume / 1_000_000,
+            "gross_revenue": gross_revenue,
+            "discount_cost": discount_cost,
+            "net_revenue": net_revenue,
+            "npv_contribution": npv_contribution,
+        })
     return pd.DataFrame(rows)
 ```
 
@@ -294,7 +347,18 @@ def compute_deal_pnl(
 
 Run: `pytest tests/test_deal_pnl.py -v`
 
-Expected: All 8 tests PASS.
+Expected:
+```
+PASSED tests/test_deal_pnl.py::test_returns_one_row_per_year
+PASSED tests/test_deal_pnl.py::test_year_1_volume_equals_committed_volume
+PASSED tests/test_deal_pnl.py::test_year_2_volume_reflects_growth_rate
+PASSED tests/test_deal_pnl.py::test_gross_revenue_is_volume_times_avg_txn_times_rate
+PASSED tests/test_deal_pnl.py::test_zero_discount_means_gross_equals_net
+PASSED tests/test_deal_pnl.py::test_discount_cost_equals_gross_minus_net
+PASSED tests/test_deal_pnl.py::test_npv_contribution_uses_hurdle_rate
+PASSED tests/test_deal_pnl.py::test_zero_growth_produces_identical_volume_each_year
+8 passed in 0.XXs
+```
 
 - [ ] **Step 6: Commit**
 
@@ -305,23 +369,26 @@ git commit -m "feat: add compute_deal_pnl with full test coverage"
 
 ---
 
-## Task 3: Build the deal simulator page
+## Task 3: Build the deal simulator page and add documentation
 
 **Files:**
 - Create: `streamlit_app/pages/2_deal_simulator.py`
+- Create: `docs/pipeline-diagram.md`
 
-- [ ] **Step 1: Create the pages directory and simulator file**
+- [ ] **Step 1: Create the pages directory**
+
+```bash
+mkdir -p streamlit_app/pages
+```
+
+- [ ] **Step 2: Create the simulator page**
 
 Create `streamlit_app/pages/2_deal_simulator.py`:
 
 ```python
-import sys
 import streamlit as st
 import pandas as pd
 import altair as alt
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.data_loader import load_data
 from utils.deal_pnl import compute_deal_pnl
 
@@ -335,7 +402,6 @@ st.caption(
 
 df = load_data()
 
-# ── Inputs ────────────────────────────────────────────────────────────────────
 left, right = st.columns([1, 2])
 
 with left:
@@ -354,17 +420,14 @@ with left:
     discount_pct = st.slider("Discount Rate off Standard Interchange (%)", 0, 30, 10)
     growth_pct = st.slider("Expected Volume Growth Rate (% YoY)", 0, 20, 5)
 
-# ── Derive baseline from dataset ──────────────────────────────────────────────
 segment_mask = (df["merchant_category"] == category) & (df["region"] == region)
 segment_df = df[segment_mask] if segment_mask.any() else df
-
 baseline_rate = segment_df["interchange_rate"].mean()
 avg_txn_usd = segment_df["avg_transaction_usd"].mean()
 
 discount_rate = discount_pct / 100
 growth_rate = growth_pct / 100
 
-# ── Compute P&L ───────────────────────────────────────────────────────────────
 pnl_df = compute_deal_pnl(
     baseline_interchange_rate=baseline_rate,
     committed_volume_m=committed_volume_m,
@@ -376,18 +439,20 @@ pnl_df = compute_deal_pnl(
 
 total_net_revenue = pnl_df["net_revenue"].sum()
 deal_npv = pnl_df["npv_contribution"].sum()
-# Volume uplift needed so discounted revenue = standard revenue at committed volume
+
+# Volume uplift needed so that discounted revenue = un-discounted revenue at committed volume.
+# Derivation: V_committed x rate = V_needed x rate x (1 - discount)
+#             V_needed = V_committed / (1 - discount)
+#             Uplift   = V_needed - V_committed
 breakeven_uplift_m = (
     committed_volume_m / (1 - discount_rate) - committed_volume_m
     if discount_rate < 1
     else float("inf")
 )
 
-# ── Outputs ───────────────────────────────────────────────────────────────────
 with right:
     st.subheader(f"Deal Output: {merchant_name}")
 
-    # Verdict banner
     if discount_pct <= 10:
         st.success("Favorable — within standard pricing band")
     elif discount_pct <= 20:
@@ -395,19 +460,20 @@ with right:
     else:
         st.error("Requires senior approval — above standard discount threshold")
 
-    # KPI cards
     k1, k2, k3 = st.columns(3)
     k1.metric("Total Net Revenue", f"${total_net_revenue / 1_000_000:.1f}M")
     k2.metric("Deal NPV (8% hurdle)", f"${deal_npv / 1_000_000:.1f}M")
     k3.metric(
         "Volume Uplift to Break Even",
         f"{breakeven_uplift_m:.1f}M txns/yr",
-        help="Additional annual volume needed to offset the discount vs standard rate",
+        help=(
+            "Additional annual volume the merchant must bring to offset this discount. "
+            "Formula: committed_volume / (1 - discount_rate) - committed_volume"
+        ),
     )
 
     st.divider()
 
-    # Bar chart: gross vs net revenue per year
     chart_data = pnl_df[["year", "gross_revenue", "net_revenue"]].melt(
         id_vars="year", var_name="type", value_name="revenue"
     )
@@ -434,54 +500,24 @@ with right:
     )
     st.altair_chart(bar_chart, use_container_width=True)
 
-    # P&L table
     st.subheader("Year-by-Year P&L")
-    display_df = pd.DataFrame(
-        {
-            "Year": pnl_df["year"],
-            "Volume (M txns)": pnl_df["volume_m"].map("{:.1f}".format),
-            "Gross Revenue": pnl_df["gross_revenue"].map("${:,.0f}".format),
-            "Discount Cost": pnl_df["discount_cost"].map("${:,.0f}".format),
-            "Net Revenue": pnl_df["net_revenue"].map("${:,.0f}".format),
-            "NPV Contribution": pnl_df["npv_contribution"].map("${:,.0f}".format),
-        }
-    )
+    display_df = pd.DataFrame({
+        "Year": pnl_df["year"],
+        "Volume (M txns)": pnl_df["volume_m"].map("{:.1f}".format),
+        "Gross Revenue": pnl_df["gross_revenue"].map("${:,.0f}".format),
+        "Discount Cost": pnl_df["discount_cost"].map("${:,.0f}".format),
+        "Net Revenue": pnl_df["net_revenue"].map("${:,.0f}".format),
+        "NPV Contribution": pnl_df["npv_contribution"].map("${:,.0f}".format),
+    })
     st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-    # Baseline info
     st.caption(
         f"Baseline interchange rate for {category} / {region}: "
-        f"{baseline_rate * 100:.3f}% | "
-        f"Avg transaction: ${avg_txn_usd:.2f}"
+        f"{baseline_rate * 100:.3f}% | Avg transaction: ${avg_txn_usd:.2f}"
     )
 ```
 
-- [ ] **Step 2: Verify the two-page app loads**
-
-Run: `cd streamlit_app && streamlit run app.py`
-
-Expected:
-- Sidebar shows two pages: "App" and "2 deal simulator"
-- Market Overview page loads with all existing charts
-- Deal Simulator page loads with inputs on the left and outputs on the right
-- Changing any input updates the outputs instantly
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add streamlit_app/pages/2_deal_simulator.py
-git commit -m "feat: add deal simulator page with P&L modeling"
-```
-
----
-
-## Task 4: Add pipeline diagram to documentation
-
-**Files:**
-- Modify: `docs/superpowers/specs/2026-04-09-deal-simulator-design.md` (already has diagram)
-- Create: `docs/pipeline-diagram.md`
-
-- [ ] **Step 1: Create a standalone pipeline diagram doc**
+- [ ] **Step 3: Create pipeline diagram**
 
 Create `docs/pipeline-diagram.md`:
 
@@ -496,25 +532,53 @@ flowchart TD
     CSV -->|"@st.cache_data"| P2["pages/2_deal_simulator.py\n🤝 Deal Simulator"]
 
     P2 --> INPUTS["User Inputs\nMerchant · Category · Region\nVolume · Discount · Growth · Term"]
-    INPUTS --> FN["compute_deal_pnl()\nutils/deal_pnl.py\nPure function · No Streamlit dependency"]
-    FN --> OUT1["KPI Cards\nNet Revenue · NPV · Break-even"]
+    INPUTS --> FN["compute_deal_pnl()\nutils/deal_pnl.py\nPure function — no Streamlit dependency"]
+    FN --> OUT1["KPI Cards\nNet Revenue · NPV · Break-even uplift"]
     FN --> OUT2["Year-by-Year P&L Table"]
     FN --> OUT3["Gross vs Net Revenue Bar Chart"]
     FN --> OUT4["Verdict Banner\nFavorable · Conditional · Requires Approval"]
 
     P2 -->|"derives baseline\ninterchange rate"| CSV
 ```
-
-**Data flow notes:**
-- Both pages load the CSV independently via the same cached loader (`utils/data_loader.py`)
-- No shared session state between pages
-- `compute_deal_pnl()` is a pure function: inputs in, DataFrame out — no side effects
-- Baseline interchange rate for the deal simulator is derived from the live dataset filtered by merchant category + region
 ```
 
-- [ ] **Step 2: Commit**
+- [ ] **Step 4: Verify the two-page app**
+
+Run from `streamlit_app/`:
+```bash
+streamlit run app.py
+```
+
+**Recruiter test** — what a hiring manager should see in 2 minutes:
+- Sidebar shows two pages: "App" (Market Overview) and "2 deal simulator" (Streamlit derives display names from filenames — underscores become spaces, leading numbers become a prefix)
+- Market Overview: all four charts load, sidebar filters respond
+- Deal Simulator: type a merchant name → header updates. Move discount slider to 25% → banner turns red. Move back to 8% → turns green. KPI cards and bar chart update instantly
+
+**Technical interviewer test** — verify the math manually:
+- Set: category=Retail, region=North America, volume=10M, discount=0%, growth=0%, term=1 year
+- Gross Revenue = Net Revenue = `10M × avg_txn_usd × baseline_rate` (exact values shown in caption)
+- NPV Contribution ≈ Net Revenue ÷ 1.08 (year 1 at 8% hurdle)
+- Volume Uplift to Break Even = 0.0M (confirmed: formula gives 10 / 1.0 - 10 = 0)
+- Now set discount=15% → Uplift should be approximately `10M / 0.85 - 10M = 1.76M`
+
+- [ ] **Step 5: Commit**
 
 ```bash
-git add docs/pipeline-diagram.md
-git commit -m "docs: add pipeline diagram for two-page Streamlit app"
+git add streamlit_app/pages/2_deal_simulator.py docs/pipeline-diagram.md
+git commit -m "feat: add deal simulator page and pipeline diagram"
 ```
+
+---
+
+## JD Coverage Checklist
+
+Before calling this done, verify each JD requirement is visibly demonstrated:
+
+| JD requirement | Where it shows up |
+|---|---|
+| "Develop pricing and deal constructs for acceptance agreements with merchants" | Deal Simulator — full merchant P&L from inputs to verdict |
+| "Business case development" | Year-by-year P&L table + Deal NPV KPI card |
+| "Superior analytical, financial modeling skills" | NPV at 8% hurdle, break-even uplift formula, compounding volume growth |
+| "Quickly arrive at recommendations" | Verdict banner gives immediate green/amber/red signal |
+| "Synthesizing large data sets" | Baseline interchange rate derived from 2,160-row dataset, shown in caption |
+| "Stakeholder impact assessments" | Discount bands tied to approval thresholds (<=10% / <=20% / >20%) |
