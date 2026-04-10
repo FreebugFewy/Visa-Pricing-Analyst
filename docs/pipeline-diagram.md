@@ -4,7 +4,7 @@
 flowchart TD
     CSV[("visa_pricing_metrics.csv\n2,160 rows")]
 
-    CSV -->|"@st.cache_data"| P1["app.py\n📊 Market Overview\nKPI cards · Volume trend\nInterchange · Acceptance · Revenue"]
+    CSV -->|"@st.cache_data"| P1["1_market_overview.py\n📊 Market Overview\nKPI cards · Volume trend\nInterchange · Acceptance · Revenue"]
     CSV -->|"@st.cache_data"| P2["pages/2_deal_simulator.py\n🤝 Deal Simulator"]
 
     P2 --> INPUTS["User Inputs\nMerchant · Category · Region\nVolume · Discount · Growth · Term"]

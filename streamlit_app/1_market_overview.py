@@ -59,7 +59,10 @@ if filtered.empty:
 # ── KPI cards ─────────────────────────────────────────────────────────────────
 total_volume   = filtered["transaction_volume"].sum()
 total_revenue  = filtered["revenue_usd"].sum()
-avg_interchange = filtered["interchange_rate"].mean()
+avg_interchange = (
+    (filtered["interchange_rate"] * filtered["transaction_volume"]).sum()
+    / filtered["transaction_volume"].sum()
+)
 avg_acceptance  = filtered["acceptance_rate"].mean()
 
 k1, k2, k3, k4 = st.columns(4)
