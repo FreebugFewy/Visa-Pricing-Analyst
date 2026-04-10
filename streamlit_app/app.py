@@ -134,7 +134,7 @@ with col3:
         alt.Chart(acc_by_region)
         .mark_bar()
         .encode(
-            x=alt.X("accept_pct:Q", title="Acceptance Rate (%)", scale=alt.Scale(domain=[75, 100], zero=False)),
+            x=alt.X("accept_pct:Q", title="Acceptance Rate (%)", scale=alt.Scale(zero=False)),
             y=alt.Y("region:N", sort="-x", title=""),
             color=alt.Color("region:N", legend=None),
             tooltip=[
