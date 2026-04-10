@@ -103,7 +103,7 @@ python generate_data.py
 
     .
     ├── streamlit_app/
-    │   ├── app.py                   # Page 1: Market Overview dashboard
+    │   ├── 1_market_overview.py     # Page 1: Market Overview dashboard
     │   ├── pages/
     │   │   └── 2_deal_simulator.py  # Page 2: Deal Simulator
     │   ├── utils/
