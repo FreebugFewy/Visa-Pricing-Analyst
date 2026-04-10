@@ -2,11 +2,14 @@
 
 This project models the pricing strategy analytics work performed by Visa's Global Pricing Strategy team. It synthesises 2,160 rows of transaction data across 5 regions, 6 merchant categories, and 3 card types to surface interchange rate trends, merchant acceptance patterns, and deal P&L economics. The centrepiece is an interactive deal simulator that models the net revenue, NPV, and break-even volume of a merchant acceptance deal — the same kind of tool a Pricing Strategy Analyst uses to evaluate and structure client deals.
 
+## Live Dashboard
+
+**URL:** https://visa-pricing-analyst-eahxvbuodqjhohv4pikbct.streamlit.app/
+
 ## Job Posting
 
 - **Role:** Analyst, Pricing Strategy
 - **Company:** Visa Inc.
-- **Link:** https://corporate.visa.com/en/jobs/REF076248W
 
 This project directly demonstrates the role's core requirements: rigorous quantitative analysis, financial modeling, and the ability to synthesise large datasets into actionable pricing recommendations for business leaders.
 
@@ -72,10 +75,6 @@ The dataset (`streamlit_app/data/visa_pricing_metrics.csv`) has 2,160 rows — o
 **Diagnostic (why does the gap exist?):** North America leads merchant acceptance at 96% while Middle East & Africa sits at 83%, a 13-point gap that persists across all merchant categories — pointing to network maturity and infrastructure differences rather than category-specific friction.
 
 **Recommendation:** Target E-commerce deal negotiations with volume-for-discount structures first — the combination of high interchange headroom (2.4%) and strong digital growth trajectory means larger deals can absorb meaningful discounts while remaining NPV-positive. Use the Deal Simulator to model the exact break-even volume before committing to a discount tier.
-
-## Live Dashboard
-
-**URL:** https://visa-pricing-analyst-eahxvbuodqjhohv4pikbct.streamlit.app/
 
 ## Setup & Reproduction
 
