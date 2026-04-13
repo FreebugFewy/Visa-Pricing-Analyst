@@ -82,7 +82,7 @@ The dataset (`streamlit_app/data/visa_pricing_metrics.csv`) has 2,160 rows — o
 
 **Recommendation:** Target E-commerce deal negotiations with volume-for-discount structures first — the combination of high interchange headroom (2.4%) and strong digital growth trajectory means larger deals can absorb meaningful discounts while remaining NPV-positive. Use the Deal Simulator to model the exact break-even volume before committing to a discount tier.
 
-- **Who to target:** Priority targets are high-volume merchants with below-average acceptance rates — they have the most to gain from network improvements, which creates negotiating leverage for volume commitments in exchange for a discount. Secondary targets are mid-volume merchants in underpenetrated regions (Middle East & Africa, Latin America) where acceptance infrastructure gaps create room for structured deals.
+- **Who to target:** The E-commerce Merchant Targets page scores and ranks the full pipeline. Top-tier deals: **NovaMart** (North America, 180M txns/yr) on volume, **Apex Digital** (Europe, 18% YoY growth) on growth trajectory, and **TechDirect** (Asia Pacific, 22% growth, 89% acceptance) on the combination of growth and network gap. Middle East & Africa merchants carry the lowest acceptance rates (82–84%) but insufficient volume to score in the top tier — pointing to an infrastructure investment case rather than a discount deal.
 
 - **Deal structure:** Lead with a 10–15% discount off the 2.4% standard rate in exchange for a minimum annual volume commitment. At 10% discount, a 50M transaction/year merchant needs only 5.6M additional transactions to break even — a realistic uplift ask for a growing e-commerce player. Avoid discounts above 20% without a 3–5 year term to ensure NPV recovery.
 
