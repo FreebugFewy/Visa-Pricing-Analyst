@@ -13,11 +13,10 @@ st.caption(
 )
 
 # ── Load merchant data ────────────────────────────────────────────────────────
-DATA_PATH = Path(__file__).parent.parent / "data" / "ecommerce_merchants.csv"
-
 @st.cache_data
 def load_merchants() -> pd.DataFrame:
-    return pd.read_csv(DATA_PATH)
+    path = Path(__file__).parent.parent / "data" / "ecommerce_merchants.csv"
+    return pd.read_csv(path)
 
 df = load_merchants()
 
@@ -42,7 +41,7 @@ df = df.sort_values("score", ascending=False).reset_index(drop=True)
 # Priority tiers
 df["priority"] = pd.cut(
     df["score"],
-    bins=[-1, 34.9, 64.9, 100],
+    bins=[-1, 34, 64, 100],
     labels=["Low", "Medium", "High"],
 )
 
