@@ -28,7 +28,7 @@ def test_perfect_acceptance_sets_network_gap_to_one():
 
 
 def test_zero_growth_applies_no_growth_multiplier():
-    # growth_multiplier = 1 + 0 = 1.0, so score = gross_revenue_m * network_gap
+    # growth_multiplier = 1 + 0 = 1.0, so score = gross_revenue * network_gap
     score = compute_opportunity_score(
         annual_volume_m=10.0,
         avg_transaction_usd=100.0,
