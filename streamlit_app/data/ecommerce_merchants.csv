@@ -1,0 +1,11 @@
+merchant_name,region,annual_volume_m,avg_transaction_usd,acceptance_rate,interchange_rate,yoy_growth_rate
+NovaMart,North America,180.0,95.0,0.94,0.0241,0.12
+Apex Digital,Europe,145.0,110.0,0.92,0.0238,0.18
+TechDirect,Asia Pacific,120.0,75.0,0.89,0.0243,0.22
+PacificCart,Asia Pacific,85.0,65.0,0.86,0.0240,0.15
+SwiftBuy,North America,70.0,88.0,0.95,0.0237,0.08
+GlobalBasket,Europe,55.0,105.0,0.91,0.0242,0.10
+SkyShop,Middle East & Africa,40.0,80.0,0.84,0.0245,0.20
+UrbanGoods,Latin America,35.0,60.0,0.83,0.0244,0.17
+ClearMarket,North America,25.0,120.0,0.96,0.0236,0.06
+NexusStore,Middle East & Africa,15.0,70.0,0.82,0.0246,0.14
